@@ -48,6 +48,8 @@ MavTracker::MavTracker(ros::NodeHandle& nh_,ros::NodeHandle& pnh_)
   image_warper_.reset(new cv_image_warp::WarpProvider(listener, "world"));
 
   debug_img_provider_.reset(new CvDebugProvider(pnh_));
+  final_debug_img_provider_.reset(new CvDebugProvider(ros::NodeHandle("~/final_img")));
+
 
   poly_pub = pnh_.advertise<geometry_msgs::PolygonStamped>("plane_poly",1);
   pose_pub = pnh_.advertise<geometry_msgs::PoseStamped>("debug_pose",1);
@@ -85,9 +87,86 @@ void MavTracker::cameraCb(const sensor_msgs::ImageConstPtr& image_msg,
 {
   latest_img_ = image_msg;
   latest_camera_info_ = info_msg;
+
+  if (prior_img_.get()){
+    cv_bridge::CvImageConstPtr img_prev_ptr_(cv_bridge::toCvShare(prior_img_, sensor_msgs::image_encodings::MONO8));
+    cv_bridge::CvImageConstPtr img_current_ptr_(cv_bridge::toCvShare(latest_img_, sensor_msgs::image_encodings::MONO8));
+
+    cv::Mat diff1;
+    //cv::Mat diff2;
+    cv::Mat img_motion;
+    cv::absdiff(img_prev_ptr_->image, img_current_ptr_->image, diff1);
+    //cv::absdiff(img_current_ptr_->image, img_next_ptr->image, diff2);
+    //cv::bitwise_and(diff1, diff2, img_motion);
+    img_motion = diff1;
+    debug_img_provider_->addDebugImage(img_motion);
+    double motion_detect_threshold = 4.0;
+    cv::threshold(img_motion, img_motion, motion_detect_threshold, 255, CV_THRESH_BINARY);
+    //cv::Mat kernel_ero = getStructuringElement(cv::MORPH_RECT, cv::Size(5,5));
+    //cv::erode(img_motion, img_motion, kernel_ero);
+    debug_img_provider_->addDebugImage(img_motion);
+
+    if (final_debug_img_provider_->areDebugImagesRequested()){
+      //cv::Mat result_img = this->findBiggestBlob(img_motion);
+
+      //cv::Mat result_img;
+      //img_current_ptr_->image.copyTo(result_img);
+
+      final_debug_img_provider_->addDebugImage(img_current_ptr_->image);
+
+      std::vector<cv::Point> biggest_blob = this->findBiggestBlob(img_motion);
+
+      if (biggest_blob.size() > 0){
+
+        cv::Rect boundbox;
+
+        boundbox = cv::boundingRect(biggest_blob);
+
+        cv::rectangle(final_debug_img_provider_->getLastAddedImage(), boundbox, cv::Scalar(255,0,0));
+      }
+
+
+      //final_debug_img_provider_->addDebugImage(result_img);
+    }
+
+  }
   
-  ROS_INFO("cb");
-  
-  
+  prior_img_ = image_msg;
+
+  debug_img_provider_->publishDebugImage();
+  final_debug_img_provider_->publishDebugImage();
+}
+
+std::vector<cv::Point> MavTracker::findBiggestBlob(const cv::Mat &src){
+  //code from http://stackoverflow.com/questions/16746473/opencv-find-bounding-box-of-largest-blob-in-binary-image
+  int largest_area=0;
+  int largest_contour_index=0;
+  cv::Mat temp(src.rows,src.cols,CV_8UC1);
+  cv::Mat dst(src.rows,src.cols,CV_8UC1,cv::Scalar::all(0));
+  src.copyTo(temp);
+
+  std::vector<std::vector<cv::Point> > contours; // storing contour
+  std::vector<cv::Vec4i> hierarchy;
+
+  cv::findContours( temp, contours, hierarchy,CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
+
+  for( int i = 0; i< contours.size(); i++ ) // iterate
+  {
+    double a=cv::contourArea( contours[i],false);  //Find the largest area of contour
+    if(a>largest_area)
+    {
+      largest_area=a;
+      largest_contour_index=i;
+    }
+
+  }
+
+  //cv::drawContours( dst, contours,largest_contour_index, cv::Scalar(255), CV_FILLED, 8, hierarchy );
+  // Draw the largest contour
+  if (contours.size() > 0){
+    return contours[largest_contour_index];
+  }else{
+    return std::vector<cv::Point>();
+  }
 }
 

@@ -61,6 +61,8 @@ public:
   void cameraCb(const sensor_msgs::ImageConstPtr& image_msg,
                 const sensor_msgs::CameraInfoConstPtr& info_msg);
 
+  std::vector<cv::Point> findBiggestBlob(const cv::Mat &src);
+
 protected:
 
   ros::Publisher poly_pub;
@@ -72,6 +74,7 @@ protected:
   ros::ServiceServer detection_service_server;
 
   boost::shared_ptr<CvDebugProvider> debug_img_provider_;
+  boost::shared_ptr<CvDebugProvider> final_debug_img_provider_;
   boost::shared_ptr<cv_image_warp::WarpProvider> image_warper_;
 
   boost::shared_ptr<image_transport::ImageTransport> it_in_;//, it_out_;
@@ -82,6 +85,8 @@ protected:
 
   sensor_msgs::ImageConstPtr latest_img_;
   sensor_msgs::CameraInfoConstPtr latest_camera_info_;
+  sensor_msgs::ImageConstPtr prior_img_;
+
 
   std::vector<Eigen::Vector3d> sample_rectangle_object_points_;
 

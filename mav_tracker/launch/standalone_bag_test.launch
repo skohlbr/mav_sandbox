@@ -10,7 +10,9 @@
     <remap from="~/camera_info" to="/pseye_camera/camera_info"/>
   </node>
    
-  <node name="image_view_dial_debug" type="image_view" pkg="image_view" args="image:=/dial_gauge_detector_node/debug_image_array" output="screen" respawn="true" />
-  <node name="image_view_dial_image_left" type="image_view" pkg="image_view" args="image:=/arm_stereo/left/image_raw" output="screen" respawn="true" />
+  <node name="image_view_debug" type="image_view" pkg="image_view" args="image:=/mav_tracker_node/debug_image_array" output="screen" respawn="true" />
+  <node name="image_view_final_debug" type="image_view" pkg="image_view" args="image:=/mav_tracker_node/final_img/debug_image_array" output="screen" respawn="true" />
+
+  <node name="image_view_image_raw" type="image_view" pkg="image_view" args="image:=/pseye_camera/image_raw" output="screen" respawn="true" />
 
 </launch>    
