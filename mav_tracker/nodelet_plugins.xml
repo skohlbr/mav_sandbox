@@ -1,0 +1,11 @@
+<library path="lib/libmav_tracker_nodelet">
+
+  <class name="mav_image_proc/mav_tracker_nodelet"
+         type="mav_image_proc::MavTrackerNodelet"
+	 base_class_type="nodelet::Nodelet">
+    <description>
+      MAV tracker nodelet
+    </description>
+  </class>
+
+</library>
