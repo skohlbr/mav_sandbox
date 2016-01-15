@@ -34,6 +34,7 @@
 #include <geometry_msgs/PolygonStamped.h>
 
 #include <cv_image_proc/cv_line_tools.h>
+#include <cv_image_proc/cv_pca.h>
 
 
 MavTracker::MavTracker(ros::NodeHandle& nh_,ros::NodeHandle& pnh_)
@@ -49,6 +50,7 @@ MavTracker::MavTracker(ros::NodeHandle& nh_,ros::NodeHandle& pnh_)
 
   debug_img_provider_.reset(new CvDebugProvider(pnh_));
   final_debug_img_provider_.reset(new CvDebugProvider(ros::NodeHandle("~/final_img")));
+  roi_debug_img_provider_.reset(new CvDebugProvider(ros::NodeHandle("~/roi_img")));
 
 
   poly_pub = pnh_.advertise<geometry_msgs::PolygonStamped>("plane_poly",1);
@@ -123,6 +125,39 @@ void MavTracker::cameraCb(const sensor_msgs::ImageConstPtr& image_msg,
         boundbox = cv::boundingRect(biggest_blob);
 
         cv::rectangle(final_debug_img_provider_->getLastAddedImage(), boundbox, cv::Scalar(255,0,0));
+
+        cv_pca::getOrientation(biggest_blob, final_debug_img_provider_->getLastAddedImage());
+
+        cv::Mat roi_img = img_current_ptr_->image(boundbox);
+
+        roi_debug_img_provider_->addDebugImage(roi_img);
+
+
+        cv::Mat thresholded_img;
+
+        //cv::Point2d image_center (img.size().width/2,img.size().height/2);
+
+        cv::threshold(roi_img, thresholded_img, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU );
+
+        roi_debug_img_provider_->addDebugImage(thresholded_img);
+
+        cv::Mat dilated;
+        double dilation_size = 1;
+        cv::Mat dilation_element = getStructuringElement( cv::MORPH_RECT,
+                                 cv::Size( 2*dilation_size + 1, 2*dilation_size+1 ),
+                                 cv::Point( dilation_size, dilation_size ) );
+        dilate( thresholded_img, dilated, dilation_element );
+
+        roi_debug_img_provider_->addDebugImage(dilated);
+
+        cv::Mat eroded;
+        double erosion_size = 4;
+        cv::Mat element = getStructuringElement( cv::MORPH_RECT,
+                                 cv::Size( 2*erosion_size + 1, 2*erosion_size+1 ),
+                                 cv::Point( erosion_size, erosion_size ) );
+        erode( thresholded_img, eroded, element );
+
+        roi_debug_img_provider_->addDebugImage(eroded);
       }
 
 
@@ -135,6 +170,7 @@ void MavTracker::cameraCb(const sensor_msgs::ImageConstPtr& image_msg,
 
   debug_img_provider_->publishDebugImage();
   final_debug_img_provider_->publishDebugImage();
+  roi_debug_img_provider_->publishDebugImage();
 }
 
 std::vector<cv::Point> MavTracker::findBiggestBlob(const cv::Mat &src){

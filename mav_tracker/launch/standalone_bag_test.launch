@@ -12,6 +12,8 @@
    
   <node name="image_view_debug" type="image_view" pkg="image_view" args="image:=/mav_tracker_node/debug_image_array" output="screen" respawn="true" />
   <node name="image_view_final_debug" type="image_view" pkg="image_view" args="image:=/mav_tracker_node/final_img/debug_image_array" output="screen" respawn="true" />
+  <node name="image_view_final_roi" type="image_view" pkg="image_view" args="image:=/mav_tracker_node/roi_img/debug_image_array" output="screen" respawn="true" />
+
 
   <node name="image_view_image_raw" type="image_view" pkg="image_view" args="image:=/pseye_camera/image_raw" output="screen" respawn="true" />
 

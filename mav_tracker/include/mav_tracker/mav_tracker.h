@@ -75,6 +75,7 @@ protected:
 
   boost::shared_ptr<CvDebugProvider> debug_img_provider_;
   boost::shared_ptr<CvDebugProvider> final_debug_img_provider_;
+  boost::shared_ptr<CvDebugProvider> roi_debug_img_provider_;
   boost::shared_ptr<cv_image_warp::WarpProvider> image_warper_;
 
   boost::shared_ptr<image_transport::ImageTransport> it_in_;//, it_out_;
